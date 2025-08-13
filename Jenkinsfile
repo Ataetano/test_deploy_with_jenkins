@@ -4,7 +4,7 @@ pipeline {
         maven 'maven_3_5_0'
     }
     environment {
-        DOCKER_HOME = '/usr/local/bin/docker'  // Path to the Docker executable
+        DOCKER_HOME = 'C:/Program Files/Docker/Docker/resources/bin/docker.exe'  // Path to the Docker executable
     }
     stages{
         stage('Build Maven'){
