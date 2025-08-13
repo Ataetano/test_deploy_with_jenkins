@@ -1,46 +1,36 @@
 pipeline {
-    agent any
-    tools{
-        maven 'maven_3_5_0'
+  agent any
+  tools { maven 'maven_3_5_0' }
+  environment {
+    // Either rely on PATH:
+    DOCKER = 'C:\\Program Files\\Docker\\Docker\\resources\\bin\\docker.exe'
+    // or hard-code the full path (quotes added by the bat line below handle spaces):
+    // DOCKER = 'C:\\Program Files\\Docker\\Docker\\resources\\bin\\docker.exe'
+  }
+  stages {
+    stage('Build Maven') {
+      steps {
+        bat 'mvn -B clean install'
+      }
     }
-    environment {
-        DOCKER_HOME = 'C:/Program Files/Docker/Docker/resources/bin/docker.exe'  // Path to the Docker executable
+    stage('Build image') {
+      steps {
+        bat '"%DOCKER%" build -t discovery-service:latest .'
+      }
     }
-    stages{
-        stage('Build Maven'){
-            steps{
-                checkout([$class: 'GitSCM', branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/Ataetano/test_deploy_with_jenkins.git']]])
-                bat 'mvn clean install'
-            }
+    stage('Push image to Hub') {
+      steps {
+        withCredentials([usernamePassword(credentialsId: 'dockerhub-pwd',
+                          usernameVariable: 'DOCKER_USERNAME',
+                          passwordVariable: 'DOCKER_PASSWORD')]) {
+          bat '''
+echo %DOCKER_PASSWORD% | "%DOCKER%" login -u %DOCKER_USERNAME% --password-stdin
+"%DOCKER%" tag discovery-service:latest janescience/discovery-service:latest
+"%DOCKER%" push janescience/discovery-service:latest
+for /f "usebackq delims=" %%i in (`"%DOCKER%" images -f "dangling=true" -q`) do "%DOCKER%" rmi -f %%i
+'''
         }
-        stage('Build image'){
-            steps{
-                script{
-                    bat '${DOCKER_HOME} build -t discovery-service:latest .'
-                }
-            }
-        }
-        
-        stage('Push image to Hub'){
-            steps{
-                script{
-                    withCredentials([usernamePassword(credentialsId: 'dockerhub-pwd', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                        bat '${DOCKER_HOME} login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}'
-                        bat '${DOCKER_HOME} tag discovery-service:latest janescience/discovery-service:latest'
-                        bat '${DOCKER_HOME} push janescience/discovery-service:latest'
-                        bat '${DOCKER_HOME} rmi -f $(${DOCKER_HOME} images -f "dangling=true" -q)'
-                    }
-                }
-            }
-        }
-        stage('Deploy to k8s'){
-            steps{
-                script{
-                    kubernetesDeploy (configs: 'k8s/deployment.yml',kubeconfigId: 'k8sconfigpwd')
-                    kubernetesDeploy (configs: 'k8s/service.yml',kubeconfigId: 'k8sconfigpwd')
-                }
-            }
-        
-        }
+      }
     }
+  }
 }
