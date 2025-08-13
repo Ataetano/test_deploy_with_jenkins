@@ -9,14 +9,14 @@ pipeline {
     stages{
         stage('Build Maven'){
             steps{
-                checkout([$class: 'GitSCM', branches: [[name: '*/master']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/Janescience/discovery-service']]])
-                sh 'mvn clean install'
+                checkout([$class: 'GitSCM', branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/Ataetano/test_deploy_with_jenkins.git']]])
+                bat 'mvn clean install'
             }
         }
         stage('Build image'){
             steps{
                 script{
-                    sh '${DOCKER_HOME} build -t discovery-service:latest .'
+                    bat '${DOCKER_HOME} build -t discovery-service:latest .'
                 }
             }
         }
@@ -25,10 +25,10 @@ pipeline {
             steps{
                 script{
                     withCredentials([usernamePassword(credentialsId: 'dockerhub-pwd', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                        sh '${DOCKER_HOME} login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}'
-                        sh '${DOCKER_HOME} tag discovery-service:latest janescience/discovery-service:latest'
-                        sh '${DOCKER_HOME} push janescience/discovery-service:latest'
-                        sh '${DOCKER_HOME} rmi -f $(${DOCKER_HOME} images -f "dangling=true" -q)'
+                        bat '${DOCKER_HOME} login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}'
+                        bat '${DOCKER_HOME} tag discovery-service:latest janescience/discovery-service:latest'
+                        bat '${DOCKER_HOME} push janescience/discovery-service:latest'
+                        bat '${DOCKER_HOME} rmi -f $(${DOCKER_HOME} images -f "dangling=true" -q)'
                     }
                 }
             }
@@ -44,4 +44,3 @@ pipeline {
         }
     }
 }
-
