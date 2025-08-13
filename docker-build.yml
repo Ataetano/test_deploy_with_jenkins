@@ -1,0 +1,29 @@
+---
+- hosts : ansible
+  tasks :
+    - name : create docker image
+      command : docker build -t discovery-service:latest .
+      args : 
+        chdir: /opt/docker/discovery-service
+    
+    - name : create tag to push image into dockerhub
+      command : docker tag discovery-service:latest janescience/discovery-service:latest
+
+    - name : push docker image
+      command : docker push janescience/discovery-service:latest
+
+    - name : stop docker container
+      command : docker stop discovery-service
+      ignore_errors: yes
+
+    - name : remove docker container
+      command : docker rm discovery-service
+      ignore_errors: yes
+
+    - name: Remove images with the tag "none"
+      command: docker rmi -f $(docker images -f "dangling=true" -q)
+      ignore_errors: yes
+
+    - name : remove docker image
+      command : docker rmi -f janescience/discovery-service
+      ignore_errors: yes
