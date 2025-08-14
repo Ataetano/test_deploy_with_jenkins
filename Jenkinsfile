@@ -32,8 +32,8 @@ pipeline {
     stage('Build & Push Image') {
       steps {
         bat '"%DOCKER%" build -t discovery-service:latest .'
-        bat '"%DOCKER%" tag discovery-service:latest janescience/discovery-service:latest'
-        bat '"%DOCKER%" push janescience/discovery-service:latest'
+        bat '"%DOCKER%" tag discovery-service:latest build2556/discovery-service:latest'
+        bat '"%DOCKER%" push build2556/discovery-service:latest'
       }
     }
 
