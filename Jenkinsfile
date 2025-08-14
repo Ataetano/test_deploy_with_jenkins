@@ -133,11 +133,17 @@ pipeline {
       }
     }
 
+    // Requires the "Kubernetes CLI" plugin for withKubeConfig (optional but handy)
     stage('Deploy to k8s') {
       steps {
-        script {
-          kubernetesDeploy(configs: 'k8s/deployment.yml', kubeconfigId: 'k8sconfigpwd')
-          kubernetesDeploy(configs: 'k8s/service.yml',    kubeconfigId: 'k8sconfigpwd')
+        withKubeConfig([credentialsId: 'k8sconfigpwd']) {
+          powershell 'kubectl version --short'
+          powershell 'kubectl config current-context'
+          powershell 'kubectl get ns'
+          powershell 'kubectl apply -f k8s/deployment.yml'
+          powershell 'kubectl apply -f k8s/service.yml'
+          // if your manifests do not include a namespace and you want default:
+          // powershell 'kubectl -n default rollout status deploy/discovery-service-app'
         }
       }
     }
