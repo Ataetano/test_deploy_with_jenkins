@@ -133,19 +133,27 @@ pipeline {
       }
     }
 
-    // Requires the "Kubernetes CLI" plugin for withKubeConfig (optional but handy)
-    stage('Deploy to k8s') {
+    stage('Deploy to k8s (kubectl)') {
       steps {
+        // credentialsId: your uploaded kubeconfig (Secret file or Kubeconfig cred)
         withKubeConfig([credentialsId: 'k8sconfigpwd']) {
-          powershell 'kubectl version --short'
-          powershell 'kubectl config current-context'
-          powershell 'kubectl get ns'
-          powershell 'kubectl apply -f k8s/deployment.yml'
-          powershell 'kubectl apply -f k8s/service.yml'
-          // if your manifests do not include a namespace and you want default:
-          // powershell 'kubectl -n default rollout status deploy/discovery-service-app'
+          // Optional sanity checks
+          powershell '& kubectl version --short'
+          powershell '& kubectl config current-context'
+          powershell '& kubectl get ns'
+
+          // Apply manifests (default namespace or specify -n)
+          powershell '& kubectl apply -f k8s/deployment.yml'
+          powershell '& kubectl apply -f k8s/service.yml'
+
+          // If your Deployment name is discovery-service-app and you want to roll to the new image tag:
+          // powershell '& kubectl -n default set image deploy/discovery-service-app discovery-service=build2556/discovery-service:${env:BUILD_NUMBER}'
+
+          // Wait until rollout completes
+          powershell '& kubectl -n default rollout status deploy/discovery-service-app --timeout=120s'
         }
       }
     }
+
   }
 }
